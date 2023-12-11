@@ -14,6 +14,8 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::config::config;
 
 mod config;
+mod handler;
+
 async fn initialize_framework() -> StandardFramework {
     let framework = StandardFramework::new();
     framework.configure(Configuration::new().prefix("$").delimiter("$"));
@@ -69,6 +71,7 @@ async fn main() -> Result<()> {
     let pool = initialize_database(config).await?;
 
     let mut client = Client::builder(config.token(), intents)
+        .event_handler(handler::Handler)
         .framework(fw)
         .await?;
 
