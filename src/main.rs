@@ -14,6 +14,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::config::config;
 
 mod config;
+mod db;
 mod handler;
 
 async fn initialize_framework() -> StandardFramework {
