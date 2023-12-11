@@ -1,5 +1,5 @@
 [package]
-name = "CrowNBot"
+name = "crown_bot"
 version = "0.1.0"
 edition = "2021"
 
@@ -29,3 +29,5 @@ sqlx = { version = "0.7.3", features = [
     "runtime-tokio",
     "tls-rustls",
 ] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
