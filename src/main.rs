@@ -1,5 +1,11 @@
+mod config;
+mod data;
+mod db;
+mod handler;
+
 use anyhow::Result;
 use config::Config;
+use data::DatabasePool;
 use serenity::{
     all::GatewayIntents,
     framework::{standard::Configuration, StandardFramework},
@@ -25,6 +31,7 @@ async fn initialize_framework() -> StandardFramework {
 async fn initialize_intents() -> GatewayIntents {
     GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT
 }
+
 async fn run_migration(pool: &Pool<Sqlite>) {
     tracing::info!("Initiating database migration process");
     sqlx::migrate!("./migrations")
@@ -33,6 +40,7 @@ async fn run_migration(pool: &Pool<Sqlite>) {
         .expect("Error Migration");
     tracing::info!("Database migration process completed successfully");
 }
+
 async fn initialize_database(config: &Config) -> Result<Pool<Sqlite>> {
     tracing::info!("Database initialization in progress");
     tracing::debug!("{}", config.db_url());
@@ -75,6 +83,12 @@ async fn main() -> Result<()> {
         .event_handler(handler::Handler)
         .framework(fw)
         .await?;
+
+    {
+        let mut data = client.data.write().await;
+
+        data.insert::<DatabasePool>(pool);
+    }
 
     if let Err(err) = client.start().await {
         println!("error: {:?}", err)
