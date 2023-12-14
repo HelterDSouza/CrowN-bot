@@ -7,25 +7,31 @@ use anyhow::Result;
 use config::Config;
 use data::DatabasePool;
 use serenity::{
-    all::GatewayIntents,
+    all::{GatewayIntents, UserId},
     framework::{standard::Configuration, StandardFramework},
+    http::Http,
     Client,
 };
 use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
     Pool, Sqlite,
 };
+use std::{collections::HashSet, str::FromStr};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::config;
 
-mod config;
-mod db;
-mod handler;
-
-async fn initialize_framework() -> StandardFramework {
+async fn initialize_framework(owners: HashSet<UserId>, id: UserId) -> StandardFramework {
     let framework = StandardFramework::new();
-    framework.configure(Configuration::new().prefix("$").delimiter("$"));
+    framework.configure(
+        Configuration::new()
+            .owners(owners)
+            .ignore_webhooks(false)
+            .no_dm_prefix(true)
+            .on_mention(Some(id))
+            .prefix("$")
+            .delimiter("$"),
+    ); // !Fix: Remover o hard code
     framework
 }
 async fn initialize_intents() -> GatewayIntents {
@@ -73,7 +79,21 @@ async fn main() -> Result<()> {
 
     init_tracing();
 
-    let fw = initialize_framework().await;
+    let http = Http::new(config.token());
+
+    let (owners, _bot_id) = match http.get_current_application_info().await {
+        Ok(info) => {
+            let mut owners = HashSet::new();
+            if let Some(owner) = &info.owner {
+                owners.insert(owner.id);
+            }
+
+            (owners, info.id)
+        }
+        Err(why) => panic!("Could not access application info: {:?}", why),
+    };
+    let id = http.get_current_user().await?.id;
+    let fw = initialize_framework(owners, id).await;
 
     let intents = initialize_intents().await;
 
