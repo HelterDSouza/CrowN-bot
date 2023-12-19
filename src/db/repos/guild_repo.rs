@@ -1,3 +1,5 @@
+use dashmap::DashMap;
+use serenity::{all::GuildId, framework::standard::CommandResult};
 use sqlx::{Pool, Sqlite};
 
 use crate::db::models::guild_configuration::GuildConfiguration;
@@ -51,5 +53,21 @@ impl GuildRepository {
             Ok(result) => Ok(result),
             Err(err) => Err(err),
         }
+    }
+
+    pub async fn fetch_prefixes(&self) -> CommandResult<DashMap<GuildId, String>> {
+        let prefixes = DashMap::new();
+
+        let cursor = sqlx::query!("SELECT guild_id, prefix FROM guild_configurations")
+            .fetch_all(&self.pool)
+            .await?;
+
+        for guild in cursor {
+            prefixes.insert(
+                GuildId::from(guild.guild_id.trim().parse::<u64>()?),
+                guild.prefix,
+            );
+        }
+        Ok(prefixes)
     }
 }
