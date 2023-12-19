@@ -11,6 +11,7 @@ struct DatabaseConfig {
 #[derive(Debug)]
 struct BotConfig {
     token: String,
+    default_prefix: String,
 }
 #[derive(Debug)]
 pub struct Config {
@@ -24,6 +25,9 @@ impl Config {
     pub fn token(&self) -> &str {
         &self.bot.token
     }
+    pub fn default_prefix(&self) -> &str {
+        &self.bot.default_prefix
+    }
 }
 
 pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
@@ -33,6 +37,7 @@ async fn init_config() -> Config {
 
     let bot_config = BotConfig {
         token: env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set"),
+        default_prefix: env::var("DISCORD_PREXI").expect("DISCORD_PREXI must be set"),
     };
 
     let database_config = DatabaseConfig {
