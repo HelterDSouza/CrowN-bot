@@ -345,6 +345,7 @@ name = "crown_bot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "dashmap",
  "dotenv",
  "serenity",
  "sqlx",
