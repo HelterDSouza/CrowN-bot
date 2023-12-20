@@ -1,5 +1,8 @@
 use dashmap::DashMap;
-use serenity::{all::GuildId, prelude::TypeMapKey};
+use serenity::{
+    all::{ChannelId, GuildId},
+    prelude::TypeMapKey,
+};
 use sqlx::SqlitePool;
 use std::{collections::HashMap, sync::Arc};
 
@@ -19,4 +22,9 @@ pub struct PubConfig;
 
 impl TypeMapKey for PubConfig {
     type Value = Arc<HashMap<String, String>>;
+}
+
+pub struct RollChannelMap;
+impl TypeMapKey for RollChannelMap {
+    type Value = Arc<DashMap<GuildId, ChannelId>>;
 }

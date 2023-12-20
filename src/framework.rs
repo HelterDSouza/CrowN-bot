@@ -38,7 +38,10 @@ async fn dynamic_prefix(ctx: &Context, msg: &Message) -> Option<String> {
         (prefixes, default_prefix)
     };
 
-    let guild_id = msg.guild_id.unwrap();
+    let guild_id = match msg.guild_id {
+        Some(value) => value,
+        None => return None,
+    };
 
     let wrapped_prefix = prefix.get(&guild_id);
 
