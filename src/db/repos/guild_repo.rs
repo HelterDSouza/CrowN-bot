@@ -11,6 +11,9 @@ pub struct GuildRepository {
 }
 
 impl GuildRepository {
+    pub fn new(pool: Pool<Sqlite>) -> Self {
+        Self { pool }
+    }
     pub async fn find_one_guild(
         &self,
         guild_id: &str,

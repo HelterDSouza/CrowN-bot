@@ -70,7 +70,7 @@ async fn main() -> Result<()> {
 
     let pool = initialize_database(config).await?;
 
-    let guild_repo = GuildRepository { pool: pool.clone() };
+    let guild_repo = GuildRepository::new(pool.clone());
     let prefixes = guild_repo.fetch_prefixes().await.unwrap();
 
     let rolls_channels = guild_repo.fetch_rolls_channels().await.unwrap();

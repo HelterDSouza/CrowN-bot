@@ -80,7 +80,7 @@ impl EventHandler for Handler {
             .expect("Failed to get database pool");
 
         // Criar instância do repositório
-        let guild_repo = GuildRepository { pool };
+        let guild_repo = GuildRepository::new(pool);
 
         // Extrair informações da guild
         let guild_name = &guild.name;
