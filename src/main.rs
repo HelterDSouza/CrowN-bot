@@ -10,7 +10,7 @@ use crate::data::{DatabasePool, PrefixMap, PubConfig};
 use crate::db::{initialize_database, repos::guild_repo::GuildRepository};
 
 use anyhow::Result;
-use serenity::framework::standard::CommandResult;
+use data::RollChannelMap;
 use serenity::{all::GatewayIntents, http::Http, Client};
 
 use std::{
@@ -70,8 +70,10 @@ async fn main() -> Result<()> {
 
     let pool = initialize_database(config).await?;
 
-    let guild_repo = GuildRepository { pool: pool.clone() };
+    let guild_repo = GuildRepository::new(pool.clone());
     let prefixes = guild_repo.fetch_prefixes().await.unwrap();
+
+    let rolls_channels = guild_repo.fetch_rolls_channels().await.unwrap();
 
     let framework = framework::initialize_framework(owners, bot_id).await;
 
@@ -84,6 +86,7 @@ async fn main() -> Result<()> {
         let mut data = client.data.write().await;
 
         data.insert::<PrefixMap>(Arc::new(prefixes));
+        data.insert::<RollChannelMap>(Arc::new(rolls_channels));
         data.insert::<DatabasePool>(pool);
         data.insert::<PubConfig>(Arc::new(pub_config));
     }
