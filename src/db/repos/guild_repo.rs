@@ -1,5 +1,8 @@
 use dashmap::DashMap;
-use serenity::{all::GuildId, framework::standard::CommandResult};
+use serenity::{
+    all::{ChannelId, GuildId},
+    framework::standard::CommandResult,
+};
 use sqlx::{Pool, Sqlite};
 
 use crate::db::models::guild_configuration::GuildConfiguration;
@@ -69,5 +72,22 @@ impl GuildRepository {
             );
         }
         Ok(prefixes)
+    }
+    pub async fn fetch_rolls_channels(&self) -> CommandResult<DashMap<GuildId, ChannelId>> {
+        let rolls_channels = DashMap::new();
+
+        let cursor = sqlx::query!("SELECT guild_id, roll_channel_id  FROM guild_configurations")
+            .fetch_all(&self.pool)
+            .await?;
+
+        for guild in cursor {
+            if let Some(channel_id) = guild.roll_channel_id {
+                rolls_channels.insert(
+                    GuildId::from(guild.guild_id.parse::<u64>()?),
+                    ChannelId::from(channel_id.parse::<u64>()?),
+                );
+            }
+        }
+        Ok(rolls_channels)
     }
 }
