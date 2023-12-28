@@ -20,7 +20,7 @@ impl GuildRepository {
     ) -> Result<Option<GuildConfiguration>, sqlx::Error> {
         let row = sqlx::query_as!(
             GuildConfiguration,
-            r#"select id as "id:_", guild_id,guild_name, prefix, is_active from guild_configurations as gc where gc.guild_id = ?"#,
+            r#"select id as "id:_",roll_channel_id, guild_id,guild_name, prefix, is_active from guild_configurations as gc where gc.guild_id = ?"#,
             guild_id
         )
         .fetch_optional(&self.pool)
@@ -43,6 +43,7 @@ impl GuildRepository {
                 ON CONFLICT DO NOTHING
                 RETURNING 
                     id as "id!:u32", 
+                    roll_channel_id,
                     guild_name, 
                     guild_id, 
                     prefix, 

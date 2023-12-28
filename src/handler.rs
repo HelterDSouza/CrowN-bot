@@ -7,7 +7,10 @@ use serenity::prelude::*;
 use crate::data::{DatabasePool, RollChannelMap};
 use crate::db::models::guild_configuration::GuildConfiguration;
 use crate::db::models::roll::EmbedRoll;
-use crate::db::repos::guild_repo::GuildRepository;
+use crate::db::repositories::character_repo::CharacterRepository;
+use crate::db::repositories::guild_repo::GuildRepository;
+use crate::db::repositories::serie_repo::SerieRepository;
+use crate::db::repositories::BaseRepository;
 
 fn log_bot_connected(user: &User) {
     tracing::info!("User '{name}' has connected", name = user.name);
@@ -15,7 +18,7 @@ fn log_bot_connected(user: &User) {
 
 async fn process_character_embed(embed: &Embed) -> Result<EmbedRoll, &'static str> {
     //TODO: Verificar se é um personagem ou qualquer roll
-    //*INFO: Para saber se é um personagem, basta pegar a description em linhas e a ultima linha tem o emoji de kakera
+    //* Para saber se é um personagem, basta pegar a description em linhas e a ultima linha tem o emoji de kakera
 
     let name = match &embed.author {
         Some(author) => author.name.clone(),
@@ -39,19 +42,31 @@ async fn process_character_embed(embed: &Embed) -> Result<EmbedRoll, &'static st
     if name.is_empty() || url.is_empty() || serie.is_empty() {
         Err("One or more required fields are empty")
     } else {
-        Ok(EmbedRoll::new(name, url, serie))
+        Ok(EmbedRoll::new(name, serie, url))
     }
 }
 
-async fn handle_rolls_message(msg: &Message) {
+async fn handle_rolls_message(msg: &Message, ctx: &Context) {
+    let pool = ctx
+        .data
+        .read()
+        .await
+        .get::<DatabasePool>()
+        .cloned()
+        .expect("Should get database pool");
+
+    let serie_repo = SerieRepository::new(pool.clone());
+    let character_repo = CharacterRepository::new(pool.clone());
+
     //* MudaeBot
     if msg.author.id == 432610292342587392 {
-        if let Some(embed) = msg.embeds.get(0) {
+        if let Some(embed) = msg.embeds.first() {
             if let Ok(roll) = process_character_embed(embed).await {
-                println!(
-                    "Name: {}, URL: {}, Serie: {}",
-                    roll.name, roll.serie, roll.url
-                );
+                let serie_id = serie_repo.fetch_id_or_create(&roll.serie).await.id;
+                let _character = character_repo
+                    .fetch_id_or_create(&roll.name, serie_id, &roll.url)
+                    .await;
+                tracing::debug!("Character: {:?}", &roll.name);
             }
             // match process_character_embed(embed).await {
             //     Ok(roll) => {}
@@ -131,7 +146,9 @@ impl EventHandler for Handler {
 
         //* Lidar com mensagens relacionadas a rolagens
 
-        let guild_id = msg.guild_id.unwrap();
+        //
+        let guild_id = msg.guild_id.expect("Should get guild_id");
+
         let channel_id = match data.get::<RollChannelMap>() {
             Some(roll_channel_map) => match roll_channel_map.get(&guild_id) {
                 Some(value) => *value.value(),
@@ -139,9 +156,8 @@ impl EventHandler for Handler {
             },
             None => return,
         };
-
         if msg.channel_id == channel_id {
-            let _ = handle_rolls_message(&msg).await;
+            let _ = handle_rolls_message(&msg, &ctx).await;
         }
     }
 }

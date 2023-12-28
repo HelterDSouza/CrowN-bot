@@ -1,5 +1,7 @@
 pub mod models;
-pub mod repos;
+pub mod repositories;
+
+use crate::config::Config;
 
 use std::str::FromStr;
 
@@ -8,8 +10,6 @@ use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
     Pool, Sqlite,
 };
-
-use crate::config::Config;
 
 pub async fn run_migration(pool: &Pool<Sqlite>) {
     tracing::info!("Initiating database migration process");

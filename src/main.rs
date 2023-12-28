@@ -7,7 +7,7 @@ mod handler;
 
 use crate::config::config;
 use crate::data::{DatabasePool, PrefixMap, PubConfig};
-use crate::db::{initialize_database, repos::guild_repo::GuildRepository};
+use crate::db::{initialize_database, repositories::guild_repo::GuildRepository};
 
 use anyhow::Result;
 use data::RollChannelMap;
