@@ -2,7 +2,7 @@
 pub struct GuildConfiguration {
     pub id: Option<u32>,
     pub guild_id: String,
-    pub roll_channel_id: String,
+    pub roll_channel_id: Option<String>,
     pub guild_name: String,
     pub prefix: String,
     pub is_active: bool,
@@ -14,7 +14,7 @@ impl Default for GuildConfiguration {
             id: None,
             guild_name: String::default(),
             guild_id: String::default(),
-            roll_channel_id: String::default(),
+            roll_channel_id: Some(String::default()),
             prefix: "$".to_string(),
             is_active: true,
         }
