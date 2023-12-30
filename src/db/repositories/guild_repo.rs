@@ -77,6 +77,29 @@ impl GuildRepository {
         }
         Ok(prefixes)
     }
+
+    pub async fn update_prefix(
+        &self,
+        guild: &str,
+        prefix: &str,
+    ) -> Result<GuildConfiguration, sqlx::Error> {
+        let row = sqlx::query_as!(
+            GuildConfiguration,
+            r#"UPDATE guild_configurations SET prefix = $1 WHERE guild_id =$2 RETURNING
+                    id as "id!:u32", 
+                    roll_channel_id,
+                    guild_name, 
+                    guild_id, 
+                    prefix, 
+                    is_active"#,
+            prefix,
+            guild
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(row)
+    }
     pub async fn fetch_rolls_channels(&self) -> CommandResult<DashMap<GuildId, ChannelId>> {
         let rolls_channels = DashMap::new();
 
