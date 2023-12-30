@@ -15,7 +15,7 @@ impl Default for GuildConfiguration {
             guild_name: String::default(),
             guild_id: String::default(),
             roll_channel_id: Some(String::default()),
-            prefix: "$".to_string(),
+            prefix: "$$".to_string(),
             is_active: true,
         }
     }
