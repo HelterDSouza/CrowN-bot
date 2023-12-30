@@ -1,4 +1,4 @@
-use crate::commands::guild_config::*;
+use crate::commands::admin::*;
 use std::collections::HashSet;
 
 use serenity::{
