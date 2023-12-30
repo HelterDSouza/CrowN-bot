@@ -1,3 +1,4 @@
+use crate::commands::guild_config::*;
 use std::collections::HashSet;
 
 use serenity::{
@@ -12,7 +13,7 @@ use serenity::{
 use crate::data::{PrefixMap, PubConfig};
 
 pub async fn initialize_framework(owners: HashSet<UserId>, id: UserId) -> StandardFramework {
-    let framework = StandardFramework::new();
+    let framework = StandardFramework::new().group(&ADMIN_GROUP);
     framework.configure(
         Configuration::new()
             .dynamic_prefix(dynamic_prefix)

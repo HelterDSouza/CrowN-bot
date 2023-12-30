@@ -1,10 +1,10 @@
-use serenity::all::{Embed, Guild, User};
+use serenity::all::{Embed, Guild, GuildId, User};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 
-use crate::data::{DatabasePool, RollChannelMap};
+use crate::data::{DatabasePool, PrefixMap, RollChannelMap};
 use crate::db::models::guild_configuration::GuildConfiguration;
 use crate::db::models::roll::EmbedRoll;
 use crate::db::repositories::character_repo::CharacterRepository;
@@ -18,7 +18,7 @@ fn log_bot_connected(user: &User) {
 
 async fn process_character_embed(embed: &Embed) -> Result<EmbedRoll, &'static str> {
     //TODO: Verificar se é um personagem ou qualquer roll
-    //* Para saber se é um personagem, basta pegar a description em linhas e a ultima linha tem o emoji de kakera
+    //COMMENT Para saber se é um personagem, basta pegar a description em linhas e a ultima linha tem o emoji de kakera
 
     let name = match &embed.author {
         Some(author) => author.name.clone(),
@@ -82,14 +82,12 @@ impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
         log_bot_connected(&ready.user);
     }
-
     async fn guild_create(&self, ctx: Context, guild: Guild, _is_new: Option<bool>) {
-        // TODO: Adiciona ao contexto quando criar uma nova config
+        let data = ctx.data.read().await;
+        let prefix_map = data.get::<PrefixMap>().unwrap();
+
         // Obter o pool de conexões do contexto
-        let pool = ctx
-            .data
-            .read()
-            .await
+        let pool = data
             .get::<DatabasePool>()
             .cloned()
             .expect("Failed to get database pool");
@@ -121,6 +119,10 @@ impl EventHandler for Handler {
                     Ok(new_config) => {
                         tracing::debug!("{:?}", new_config);
                         tracing::info!("Guild {guild_name} recognized and loaded.");
+                        prefix_map.insert(
+                            GuildId::new(new_config.guild_id.parse().unwrap()),
+                            new_config.prefix,
+                        );
                     }
                     Err(err) => {
                         tracing::error!("Error creating configuration: {:?}", err);
@@ -135,18 +137,17 @@ impl EventHandler for Handler {
 
     async fn message(&self, ctx: Context, msg: Message) {
         let data = ctx.data.read().await;
-        //* Ignorar mensagens do próprio bot
+        //Ignorar mensagens do próprio bot
         if msg.author.id == 1175543083799154708 {
             return;
         }
-        //* Lida com DMs
+        //Lida com DMs
         if msg.guild_id.is_none() {
             return;
         }
 
-        //* Lidar com mensagens relacionadas a rolagens
+        //Lidar com mensagens relacionadas a rolagens
 
-        //
         let guild_id = msg.guild_id.expect("Should get guild_id");
 
         let channel_id = match data.get::<RollChannelMap>() {

@@ -18,6 +18,7 @@ impl TypeMapKey for PrefixMap {
     type Value = Arc<DashMap<GuildId, String>>;
 }
 
+// Config Global
 pub struct PubConfig;
 
 impl TypeMapKey for PubConfig {
