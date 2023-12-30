@@ -43,6 +43,7 @@ impl CharacterRepository {
 
         Ok(row)
     }
+
     pub async fn update_resource(&self, name: &str, id: u32) -> Result<(), sqlx::Error> {
         let _ = sqlx::query!(r#"UPDATE characters SET name = $1 WHERE id = $2"#, name, id)
             .execute(&self.pool)
@@ -58,12 +59,10 @@ impl CharacterRepository {
         image_url: &str,
     ) -> Character {
         match self.fetch_resource(name).await {
-            Ok(created) => match created {
-                Some(character) => character,
-                None => match self.create_resource(name, serie_id, image_url).await {
-                    Ok(character) => character,
-                    Err(_) => todo!(),
-                },
+            Ok(Some(character)) => character,
+            Ok(None) => match self.create_resource(name, serie_id, image_url).await {
+                Ok(character) => character,
+                Err(_) => todo!(),
             },
             Err(_) => todo!(),
         }

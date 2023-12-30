@@ -48,12 +48,10 @@ impl SerieRepository {
 
     pub async fn fetch_id_or_create(&self, name: &str) -> SerieIdInResponse {
         let id = match self.fetch_resource(name).await {
-            Ok(created) => match created {
-                Some(serie) => serie.id,
-                None => match self.create_resource(name).await {
-                    Ok(serie) => serie.id,
-                    Err(_) => todo!(),
-                },
+            Ok(Some(serie)) => serie.id,
+            Ok(None) => match self.create_resource(name).await {
+                Ok(serie) => serie.id,
+                Err(_) => todo!(),
             },
             Err(_) => todo!(),
         };
