@@ -1,1 +1,1 @@
-pub mod guild_config;
+pub mod admin;
