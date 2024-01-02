@@ -1,4 +1,4 @@
-use serenity::all::{Embed, Guild, GuildId, User};
+use serenity::all::{Embed, Guild, GuildId, UnavailableGuild, User};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
@@ -34,6 +34,7 @@ async fn process_character_embed(embed: &Embed) -> Result<EmbedRoll, &'static st
         Some(description) => description
             .lines()
             .take(description.lines().count() - 1)
+            .filter(|&line| !line.starts_with("<:"))
             .collect::<Vec<_>>()
             .join(" "),
         None => String::default(),
@@ -55,6 +56,7 @@ async fn handle_rolls_message(msg: &Message, ctx: &Context) {
         .cloned()
         .expect("Should get database pool");
 
+    // FIXME: Remover esse clone's
     let serie_repo = SerieRepository::new(pool.clone());
     let character_repo = CharacterRepository::new(pool.clone());
 
@@ -82,6 +84,26 @@ impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
         log_bot_connected(&ready.user);
     }
+    async fn guild_delete(&self, ctx: Context, incomplete: UnavailableGuild, full: Option<Guild>) {
+        let pool = ctx
+            .data
+            .read()
+            .await
+            .get::<DatabasePool>()
+            .cloned()
+            .unwrap();
+
+        let guild_repo = GuildRepository::new(pool);
+        let guild_id = match full {
+            Some(guild) => guild.id.to_string(),
+            None => incomplete.id.to_string(),
+        };
+
+        match guild_repo.deactivate(&guild_id).await {
+            Ok(_) => tracing::info!("{:?} deactivated", guild_id),
+            Err(err) => tracing::error!("unable to deactivate guild {}\n error: {}", guild_id, err),
+        }
+    }
     async fn guild_create(&self, ctx: Context, guild: Guild, _is_new: Option<bool>) {
         let data = ctx.data.read().await;
         let prefix_map = data.get::<PrefixMap>().unwrap();
@@ -105,7 +127,20 @@ impl EventHandler for Handler {
         // Verificar se a configuração já existe
         match guild_repo.find_one_guild(&guild_config.guild_id).await {
             Ok(Some(config)) => {
-                tracing::debug!("Found guild {} configuration", config.guild_id)
+                tracing::debug!("Found guild {} configuration", config.guild_id);
+                // update is_active
+                if !config.is_active {
+                    match guild_repo.activate(guild_id).await {
+                        Ok(_) => tracing::info!("{} activating", guild_id),
+                        Err(err) => {
+                            tracing::error!(
+                                "unable to activate guild {}\n error: {}",
+                                guild_id,
+                                err
+                            )
+                        }
+                    }
+                }
             }
             Ok(None) => {
                 tracing::debug!(
@@ -134,7 +169,6 @@ impl EventHandler for Handler {
             }
         }
     }
-
     async fn message(&self, ctx: Context, msg: Message) {
         let data = ctx.data.read().await;
         //Ignorar mensagens do próprio bot

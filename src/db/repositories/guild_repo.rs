@@ -62,6 +62,32 @@ impl GuildRepository {
         }
     }
 
+    pub async fn deactivate(
+        &self,
+        guild_id: &str,
+    ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
+        let row = sqlx::query!(
+            "UPDATE guild_configurations SET is_active = false WHERE guild_id = $1",
+            guild_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(row)
+    }
+
+    pub async fn activate(
+        &self,
+        guild_id: &str,
+    ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
+        let row = sqlx::query!(
+            "UPDATE guild_configurations SET is_active = true WHERE guild_id = $1",
+            guild_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(row)
+    }
+
     pub async fn fetch_prefixes(&self) -> CommandResult<DashMap<GuildId, String>> {
         let prefixes = DashMap::new();
 
@@ -100,6 +126,7 @@ impl GuildRepository {
 
         Ok(row)
     }
+
     pub async fn fetch_rolls_channels(&self) -> CommandResult<DashMap<GuildId, ChannelId>> {
         let rolls_channels = DashMap::new();
 
@@ -116,5 +143,20 @@ impl GuildRepository {
             }
         }
         Ok(rolls_channels)
+    }
+
+    pub async fn set_roll_channel(
+        &self,
+        channel_id: &str,
+        guild_id: &str,
+    ) -> Result<(), sqlx::Error> {
+        let _ = sqlx::query!(
+            "UPDATE guild_configurations SET roll_channel_id = $1 where guild_id = $2",
+            channel_id,
+            guild_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
     }
 }
