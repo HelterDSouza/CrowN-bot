@@ -2,8 +2,10 @@ mod commands;
 mod config;
 mod data;
 mod db;
+mod events;
 mod framework;
 mod handler;
+mod utils;
 
 use crate::config::config;
 use crate::data::{DatabasePool, PrefixMap, PubConfig};
