@@ -32,11 +32,14 @@ impl CharacterRepository {
 
         Ok(row)
     }
-    pub async fn fetch_resource(&self, name: &str) -> Result<Option<Character>, sqlx::Error> {
+    pub async fn fetch_resource(
+        &self,
+        character_name: &str,
+    ) -> Result<Option<Character>, sqlx::Error> {
+        let name = format!("%{}%", character_name);
         let row = sqlx::query_as!(
             Character,
-            r#"SELECT id as "id!:u32", name, series_id as "series_id!:u32",image FROM characters WHERE name = $1"#,
-            name
+            r#"SELECT id as "id!:u32", name, series_id as "series_id!:u32",image FROM characters WHERE name like $1 "#,name
         )
         .fetch_optional(&self.pool)
         .await?;
@@ -68,3 +71,4 @@ impl CharacterRepository {
         }
     }
 }
+

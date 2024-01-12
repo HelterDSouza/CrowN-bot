@@ -1,4 +1,5 @@
 use crate::commands::admin::*;
+use crate::commands::custom_image::*;
 use crate::data::{PrefixMap, PubConfig};
 use std::collections::HashSet;
 
@@ -12,7 +13,9 @@ use serenity::{
 };
 
 pub async fn initialize_framework(owners: HashSet<UserId>, id: UserId) -> StandardFramework {
-    let framework = StandardFramework::new().group(&ADMIN_GROUP);
+    let framework = StandardFramework::new()
+        .group(&ADMIN_GROUP)
+        .group(&CUSTOMIMAGE_GROUP);
 
     framework.configure(
         Configuration::new()

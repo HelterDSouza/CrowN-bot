@@ -2,3 +2,5 @@
 .vscode/
 database.db
 .env
+*.db-shm
+*.db-wal

@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+mod constants;
 mod data;
 mod db;
 mod events;
@@ -99,3 +100,4 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
