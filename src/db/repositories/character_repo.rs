@@ -24,7 +24,7 @@ impl CharacterRepository {
     ) -> Result<Character, sqlx::Error> {
         let row = sqlx::query_as!(
             Character,
-            r#"INSERT INTO characters(name, series_id, image) VALUES ($1,$2,$3) ON CONFLICT (name) DO NOTHING RETURNING id as "id!:u32", name, series_id as "series_id!:u32",image"#,
+            r#"INSERT INTO characters(name, serie_id, image) VALUES ($1,$2,$3) ON CONFLICT (name) DO NOTHING RETURNING id as "id!:u32", name, serie_id as "serie_id!:u32",image"#,
             name,serie_id,image_url
         )
         .fetch_one(&self.pool)
@@ -39,7 +39,7 @@ impl CharacterRepository {
         let name = format!("%{}%", character_name);
         let row = sqlx::query_as!(
             Character,
-            r#"SELECT id as "id!:u32", name, series_id as "series_id!:u32",image FROM characters WHERE name like $1 "#,name
+            r#"SELECT id as "id!:u32", name, serie_id as "serie_id!:u32",image FROM characters WHERE name like $1 "#,name
         )
         .fetch_optional(&self.pool)
         .await?;

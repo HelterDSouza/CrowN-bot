@@ -20,7 +20,7 @@ impl GuildRepository {
     ) -> Result<Option<GuildConfiguration>, sqlx::Error> {
         let row = sqlx::query_as!(
             GuildConfiguration,
-            r#"select id as "id:_",roll_channel_id, guild_id,guild_name, prefix, is_active from guild_configurations as gc where gc.guild_id = ?"#,
+            r#"select id as "id:_",roll_channel, guild_id,name, prefix, is_active from GuildConfigurations as gc where gc.guild_id = ?"#,
             guild_id
         )
         .fetch_optional(&self.pool)
@@ -38,17 +38,17 @@ impl GuildRepository {
     ) -> Result<GuildConfiguration, sqlx::Error> {
         let row = sqlx::query_as!(
             GuildConfiguration,
-            r#"INSERT INTO guild_configurations(guild_name, guild_id, prefix, is_active) 
+            r#"INSERT INTO GuildConfigurations(name, guild_id, prefix, is_active) 
                 Values(?, ?, ?, ?)
                 ON CONFLICT DO NOTHING
                 RETURNING 
                     id as "id!:u32", 
-                    roll_channel_id,
-                    guild_name, 
+                    roll_channel,
+                    name, 
                     guild_id, 
                     prefix, 
                     is_active"#,
-            guild.guild_name,
+            guild.name,
             guild.guild_id,
             guild.prefix,
             guild.is_active
@@ -67,7 +67,7 @@ impl GuildRepository {
         guild_id: &str,
     ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
         let row = sqlx::query!(
-            "UPDATE guild_configurations SET is_active = false WHERE guild_id = $1",
+            "UPDATE GuildConfigurations SET is_active = false WHERE guild_id = $1",
             guild_id
         )
         .execute(&self.pool)
@@ -80,7 +80,7 @@ impl GuildRepository {
         guild_id: &str,
     ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
         let row = sqlx::query!(
-            "UPDATE guild_configurations SET is_active = true WHERE guild_id = $1",
+            "UPDATE GuildConfigurations SET is_active = true WHERE guild_id = $1",
             guild_id
         )
         .execute(&self.pool)
@@ -91,7 +91,7 @@ impl GuildRepository {
     pub async fn fetch_prefixes(&self) -> CommandResult<DashMap<GuildId, String>> {
         let prefixes = DashMap::new();
 
-        let cursor = sqlx::query!("SELECT guild_id, prefix FROM guild_configurations")
+        let cursor = sqlx::query!("SELECT guild_id, prefix FROM GuildConfigurations")
             .fetch_all(&self.pool)
             .await?;
 
@@ -111,10 +111,10 @@ impl GuildRepository {
     ) -> Result<GuildConfiguration, sqlx::Error> {
         let row = sqlx::query_as!(
             GuildConfiguration,
-            r#"UPDATE guild_configurations SET prefix = $1 WHERE guild_id =$2 RETURNING
+            r#"UPDATE GuildConfigurations SET prefix = $1 WHERE guild_id =$2 RETURNING
                     id as "id!:u32", 
-                    roll_channel_id,
-                    guild_name, 
+                    roll_channel,
+                    name, 
                     guild_id, 
                     prefix, 
                     is_active"#,
@@ -130,12 +130,14 @@ impl GuildRepository {
     pub async fn fetch_rolls_channels(&self) -> CommandResult<DashMap<GuildId, ChannelId>> {
         let rolls_channels = DashMap::new();
 
-        let cursor = sqlx::query!("SELECT guild_id, roll_channel_id  FROM guild_configurations")
-            .fetch_all(&self.pool)
-            .await?;
+        let cursor = sqlx::query!(
+            "SELECT guild_id, roll_channel  FROM GuildConfigurations WHERE is_active = 1"
+        )
+        .fetch_all(&self.pool)
+        .await?;
 
         for guild in cursor {
-            if let Some(channel_id) = guild.roll_channel_id {
+            if let Some(channel_id) = guild.roll_channel {
                 rolls_channels.insert(
                     GuildId::from(guild.guild_id.parse::<u64>()?),
                     ChannelId::from(channel_id.parse::<u64>()?),
@@ -151,7 +153,7 @@ impl GuildRepository {
         guild_id: &str,
     ) -> Result<(), sqlx::Error> {
         let _ = sqlx::query!(
-            "UPDATE guild_configurations SET roll_channel_id = $1 where guild_id = $2",
+            "UPDATE GuildConfigurations SET roll_channel = $1 where guild_id = $2",
             channel_id,
             guild_id
         )
@@ -160,3 +162,4 @@ impl GuildRepository {
         Ok(())
     }
 }
+
