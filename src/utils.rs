@@ -4,7 +4,6 @@ use serenity::{
     framework::standard::CommandResult,
 };
 use tracing::Level;
-use tracing_subscriber::fmt::format;
 
 use crate::{
     data::DatabasePool,
