@@ -1,7 +1,9 @@
 use serenity::{
     all::{Embed, Message},
     client::Context,
+    framework::standard::CommandResult,
 };
+use tracing::Level;
 
 use crate::{
     data::DatabasePool,
@@ -68,3 +70,23 @@ pub async fn handle_rolls_message(msg: &Message, ctx: &Context) {
         }
     }
 }
+
+pub fn loggin_response(level: Level, msg: &str) {
+    match level {
+        Level::DEBUG => tracing::event!(Level::DEBUG, msg),
+        Level::ERROR => tracing::event!(Level::ERROR, msg),
+        Level::INFO => tracing::event!(Level::INFO, msg),
+        Level::WARN => tracing::event!(Level::WARN, msg),
+        Level::TRACE => tracing::event!(Level::TRACE, msg),
+    }
+}
+pub async fn confused(ctx: &Context, msg: &Message) -> CommandResult {
+    check_msg(msg.reply(ctx, "???").await);
+    Ok(())
+}
+pub fn check_msg(result: serenity::Result<Message>) {
+    if let Err(why) = result {
+        loggin_response(Level::WARN, &format!("Error sending message: {:?}", why));
+    }
+}
+

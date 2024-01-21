@@ -21,7 +21,6 @@ pub async fn set_roll_channel(ctx: &Context, msg: &Message, mut args: Args) -> C
     // Typemaps
     let roll_map = data.get::<RollChannelMap>().cloned().unwrap();
     let pool = data.get::<DatabasePool>().cloned().unwrap();
-
     // repositorios
     let guild_repo = GuildRepository::new(pool);
 
@@ -63,7 +62,6 @@ pub async fn set_roll_channel(ctx: &Context, msg: &Message, mut args: Args) -> C
             }
         }
     };
-
     match guild_repo
         .set_roll_channel(&channel_id.to_string(), &guild_id.to_string())
         .await
@@ -71,6 +69,8 @@ pub async fn set_roll_channel(ctx: &Context, msg: &Message, mut args: Args) -> C
         Ok(_) => {
             if let Some(mut roll) = roll_map.get_mut(&guild_id) {
                 *roll = channel_id;
+            } else {
+                roll_map.insert(guild_id, channel_id);
             };
             if let Err(err) = msg.reply(&ctx.http, "saved").await {
                 tracing::error!("Error replying to message: {:?}", err);
@@ -99,3 +99,4 @@ async fn get_answer(ctx: &Context, msg: &Message) -> Option<ChannelId> {
         _ => None,
     }
 }
+

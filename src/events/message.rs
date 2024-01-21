@@ -14,7 +14,8 @@ pub async fn on_message_roll(ctx: &Context, msg: &Message) {
         None => return,
     };
     if msg.channel_id == channel_id {
-        tracing::debug!("Received roll message: {:?}", msg);
+        // tracing::debug!("Received roll message: {:?}", msg);
         let _ = handle_rolls_message(msg, ctx).await;
     }
 }
+
