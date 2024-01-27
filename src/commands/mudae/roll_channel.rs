@@ -18,7 +18,7 @@ async fn get_answer(ctx: &Context<'_>, msg: &serenity::Message) -> Option<sereni
         _ => None,
     }
 }
-
+//NOTE: guild owners_only
 #[poise::command(
     prefix_command,
     slash_command,
@@ -89,4 +89,3 @@ pub async fn set_roll_channel(
     };
     Ok(())
 }
-
