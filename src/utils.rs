@@ -6,7 +6,7 @@ use serenity::{
 use tracing::Level;
 
 use crate::{
-    data::DatabasePool,
+    data::Data,
     db::{
         models::roll::EmbedRoll,
         repositories::{
@@ -44,20 +44,22 @@ pub async fn parse_roll_embed(embed: &Embed) -> Result<EmbedRoll, &'static str> 
     }
 }
 
-pub async fn handle_rolls_message(msg: &Message, ctx: &Context) {
-    let pool = ctx
-        .data
-        .read()
-        .await
-        .get::<DatabasePool>()
-        .cloned()
-        .expect("Should get database pool");
+pub async fn handle_rolls_message(msg: &Message, _ctx: &Context, data: &Data) {
+    // let pool = ctx
+    //     .data
+    //     .read()
+    //     .await
+    //     .get::<DatabasePool>()
+    //     .cloned()
+    //     .expect("Should get database pool");
 
+    let pool = data.pool.clone();
     // FIXME: Remover esse clone's
     let serie_repo = SerieRepository::new(pool.clone());
     let character_repo = CharacterRepository::new(pool.clone());
 
     //* MudaeBot
+    println!("{msg:?}");
     if msg.author.id == 432610292342587392 {
         if let Some(embed) = msg.embeds.first() {
             if let Ok(roll) = parse_roll_embed(embed).await {
@@ -71,13 +73,13 @@ pub async fn handle_rolls_message(msg: &Message, ctx: &Context) {
     }
 }
 
-pub fn loggin_response(level: Level, msg: &str) {
+pub fn log_response(level: Level, msg: &str) {
     match level {
-        Level::DEBUG => tracing::event!(Level::DEBUG, msg),
-        Level::ERROR => tracing::event!(Level::ERROR, msg),
-        Level::INFO => tracing::event!(Level::INFO, msg),
-        Level::WARN => tracing::event!(Level::WARN, msg),
-        Level::TRACE => tracing::event!(Level::TRACE, msg),
+        Level::DEBUG => tracing::event!(Level::DEBUG, "{}", msg),
+        Level::ERROR => tracing::event!(Level::ERROR, "{}", msg),
+        Level::INFO => tracing::event!(Level::INFO, "{}", msg),
+        Level::WARN => tracing::event!(Level::WARN, "{}", msg),
+        Level::TRACE => tracing::event!(Level::TRACE, "{}", msg),
     }
 }
 pub async fn confused(ctx: &Context, msg: &Message) -> CommandResult {
@@ -86,7 +88,7 @@ pub async fn confused(ctx: &Context, msg: &Message) -> CommandResult {
 }
 pub fn check_msg(result: serenity::Result<Message>) {
     if let Err(why) = result {
-        loggin_response(Level::WARN, &format!("Error sending message: {:?}", why));
+        log_response(Level::WARN, &format!("Error sending message: {:?}", why));
     }
 }
 

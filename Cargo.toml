@@ -32,3 +32,4 @@ sqlx = { version = "0.7.3", features = [
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 dashmap = "5.5.3"
+poise = { version = "0.6.1", features = ["collector"] }

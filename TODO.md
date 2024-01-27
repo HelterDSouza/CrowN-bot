@@ -4,7 +4,7 @@
 - [ ] Organizar melhor os arquivos e pastas
 - [ ] Quebrar Custom image table, id do host, qual host, qual a extensao
 - [ ] Usar os models para instanciar e configurar default para os repositorios
-
+- [ ] Implementar transaction
 ## comandos
 - [x] Adicionar image
 - [x] remover imagem

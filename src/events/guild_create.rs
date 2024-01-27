@@ -4,21 +4,20 @@ use serenity::{
 };
 
 use crate::{
-    data::{DatabasePool, PrefixMap},
+    data::Data,
     db::{
         models::guild_configuration::GuildConfiguration, repositories::guild_repo::GuildRepository,
     },
 };
 
-pub async fn on_guild_create_setup(ctx: &Context, guild: &Guild, _is_new: &Option<bool>) {
-    let data = ctx.data.read().await;
-    let prefix_map = data.get::<PrefixMap>().unwrap();
-
-    // Obter o pool de conexões do contexto
-    let pool = data
-        .get::<DatabasePool>()
-        .cloned()
-        .expect("Failed to get database pool");
+pub async fn on_guild_create_setup(
+    _ctx: &Context,
+    guild: &Guild,
+    _is_new: &Option<bool>,
+    data: &Data,
+) {
+    let prefix_map = data.prefix_map.clone();
+    let pool = data.pool.clone();
 
     // Criar instância do repositório
     let guild_repo = GuildRepository::new(pool);
@@ -56,6 +55,7 @@ pub async fn on_guild_create_setup(ctx: &Context, guild: &Guild, _is_new: &Optio
                 Ok(new_config) => {
                     tracing::debug!("{:?}", new_config);
                     tracing::info!("Guild {guild_name} recognized and loaded.");
+
                     prefix_map.insert(
                         GuildId::new(new_config.guild_id.parse().unwrap()),
                         new_config.prefix,

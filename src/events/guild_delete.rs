@@ -3,21 +3,16 @@ use serenity::{
     client::Context,
 };
 
-use crate::{data::DatabasePool, db::repositories::guild_repo::GuildRepository};
+use crate::{data::Data, db::repositories::guild_repo::GuildRepository};
 
 pub async fn on_guild_delete_deactivate(
-    ctx: &Context,
+    _ctx: &Context,
     incomplete: &UnavailableGuild,
     full: &Option<Guild>,
+    data: &Data,
 ) {
     // Get the database pool from the context
-    let pool = ctx
-        .data
-        .read()
-        .await
-        .get::<DatabasePool>()
-        .cloned()
-        .expect("Failed to get database pool");
+    let pool = data.pool.clone();
 
     // Create a new instance of the GuildRepository using the database pool
     let guild_repo = GuildRepository::new(pool);
@@ -37,3 +32,4 @@ pub async fn on_guild_delete_deactivate(
         tracing::info!("{:?} deactivated", guild_id);
     }
 }
+

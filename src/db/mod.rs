@@ -11,7 +11,7 @@ use sqlx::{
     Pool, Sqlite,
 };
 
-pub async fn run_migration(pool: &Pool<Sqlite>) {
+async fn run_migration(pool: &Pool<Sqlite>) {
     tracing::info!("Initiating database migration process");
     sqlx::migrate!("./migrations")
         .run(pool)
@@ -34,3 +34,4 @@ pub async fn initialize_database(config: &Config) -> Result<Pool<Sqlite>> {
 
     Ok(pool)
 }
+

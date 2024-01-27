@@ -5,26 +5,18 @@ mod data;
 mod db;
 mod events;
 mod framework;
-mod handler;
+mod paginate;
 mod utils;
 
 use crate::config::config;
-use crate::data::{DatabasePool, PrefixMap, PubConfig};
 use crate::db::{initialize_database, repositories::guild_repo::GuildRepository};
 
-use anyhow::Result;
-use data::RollChannelMap;
-use serenity::{all::GatewayIntents, http::Http, Client};
-
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
-
+use data::Data;
+use poise::serenity_prelude::{self as serenity};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-async fn initialize_intents() -> GatewayIntents {
-    GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT
+async fn initialize_intents() -> serenity::GatewayIntents {
+    serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT
 }
 
 fn init_tracing() {
@@ -39,65 +31,33 @@ fn init_tracing() {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     let config = config().await;
 
-    let mut pub_config = HashMap::new();
-
-    pub_config.insert(
-        "default_prefix".to_string(),
-        config.default_prefix().to_string(),
-    );
-
+    println!("{config:#?}");
     init_tracing();
 
-    let http = Http::new(config.token());
+    let pool = initialize_database(config).await.unwrap();
 
-    let (owners, bot_id) = match http.get_current_application_info().await {
-        Ok(info) => {
-            let mut owners = HashSet::new();
+    let guild_repo = GuildRepository::new(pool.clone());
 
-            if let Some(owner) = &info.owner {
-                owners.insert(owner.id);
-            }
+    let prefixes = guild_repo.fetch_prefixes().await.unwrap();
+    let rolls_channels = guild_repo.fetch_rolls_channels().await.unwrap();
 
-            match http.get_current_user().await {
-                Ok(bot_id) => (owners, bot_id.id),
-                Err(why) => panic!("Could not access the bot id: {:?}", why),
-            }
-        }
-        Err(why) => panic!("Could not access application info: {:?}", why),
+    let data = Data {
+        pool,
+        default_prefix: config.default_prefix(),
+        prefix_map: prefixes,
+        roll_channel_map: rolls_channels,
     };
+    println!("{:#?}", &data);
+    let framework = framework::initialize_framework(data).await;
 
     let intents = initialize_intents().await;
 
-    let pool = initialize_database(config).await?;
-
-    let guild_repo = GuildRepository::new(pool.clone());
-    let prefixes = guild_repo.fetch_prefixes().await.unwrap();
-
-    let rolls_channels = guild_repo.fetch_rolls_channels().await.unwrap();
-
-    let framework = framework::initialize_framework(owners, bot_id).await;
-
-    let mut client = Client::builder(config.token(), intents)
-        .event_handler(handler::Handler)
+    let client = serenity::ClientBuilder::new(config.token(), intents)
         .framework(framework)
-        .await?;
+        .await;
 
-    {
-        let mut data = client.data.write().await;
-
-        data.insert::<PrefixMap>(Arc::new(prefixes));
-        data.insert::<RollChannelMap>(Arc::new(rolls_channels));
-        data.insert::<DatabasePool>(pool);
-        data.insert::<PubConfig>(Arc::new(pub_config));
-    }
-
-    if let Err(err) = client.start().await {
-        println!("error: {:?}", err)
-    }
-
-    Ok(())
+    client.unwrap().start().await.unwrap();
 }
-

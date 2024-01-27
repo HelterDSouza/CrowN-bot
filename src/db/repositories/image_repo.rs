@@ -18,15 +18,17 @@ impl ImageRepository {
         image: &str,
         character_id: u32,
         is_nsfw: bool,
+        owner: i64,
     ) -> Result<(), sqlx::Error> {
-        let _ = sqlx::query!(
-            r#"INSERT INTO CustomImages(image_url,character_id,is_nsfw) VALUES($1,$2,$3)"#,
+        let query = sqlx::query!(
+            r#"INSERT INTO CustomImages (image_url,character_id,is_nsfw,added_by) VALUES($1,$2,$3,$4)"#,
             image,
             character_id,
-            is_nsfw
-        )
-        .execute(&self.pool)
-        .await?;
+            is_nsfw,
+            owner
+        );
+
+        query.execute(&self.pool).await?;
         Ok(())
     }
     pub async fn fetch_collection_by_character(
@@ -68,4 +70,3 @@ impl ImageRepository {
 pub struct CustomImage {
     pub image_url: String,
 }
-

@@ -1,5 +1,7 @@
 run:
     cargo run
+watch:
+    cargo watch -q -c -w src -x run
 makemigration:
     sqlx migrate add
 migrate:
