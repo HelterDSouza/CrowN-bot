@@ -21,11 +21,10 @@ impl ImageRepository {
         owner: i64,
     ) -> Result<(), sqlx::Error> {
         let query = sqlx::query!(
-            r#"INSERT INTO CustomImages (image_url,character_id,is_nsfw,added_by) VALUES($1,$2,$3,$4)"#,
+            r#"INSERT INTO CustomImages (image_url,character_id,is_nsfw) VALUES($1,$2,$3)"#,
             image,
             character_id,
             is_nsfw,
-            owner
         );
 
         query.execute(&self.pool).await?;
@@ -47,15 +46,11 @@ impl ImageRepository {
     pub async fn fetch_collection(
         &self,
         _account_id: u64,
-        is_nsfw: bool,
+        _is_nsfw: bool,
     ) -> Result<Vec<CustomImage>, sqlx::Error> {
-        let row = sqlx::query_as!(
-            CustomImage,
-            "SELECT image_url FROM CustomImages WHERE is_nsfw = $1",
-            is_nsfw
-        )
-        .fetch_all(&self.pool)
-        .await?;
+        let row = sqlx::query_as!(CustomImage, "SELECT image_url FROM CustomImages",)
+            .fetch_all(&self.pool)
+            .await?;
         Ok(row)
     }
     pub async fn remove_resource(&self, image_url: &str) -> Result<(), sqlx::Error> {

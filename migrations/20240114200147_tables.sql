@@ -6,13 +6,12 @@ CREATE TABLE Accounts (
   global_name VARCHAR(255)
 );
 
-CREATE TABLE GuildConfigurations (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id VARCHAR(255) NOT NULL UNIQUE,
+CREATE TABLE IF NOT EXISTS GuildConfigurations (
+  guild_id INTEGER PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  prefix VARCHAR(255) NOT NULL DEFAULT '$',
+  prefix VARCHAR(2) NOT NULL,
   is_active BOOLEAN NOT NULL DEFAULT true,
-  roll_channel VARCHAR(255)
+  roll_channel INTEGER
 );
 
 CREATE TABLE CustomImages (

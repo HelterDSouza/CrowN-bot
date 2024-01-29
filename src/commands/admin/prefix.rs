@@ -16,14 +16,17 @@ use crate::{
     aliases("prefix")
 )]
 pub async fn set_prefix(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().unwrap();
+    let guild_id = ctx.guild_id().expect("Should return GuildId");
 
     let guild_repo = GuildRepository::new(ctx.data().pool.clone());
 
     let prefix_map = &ctx.data().prefix_map;
 
     let prefix_str = {
-        let prefix = prefix_map.try_get(&guild_id).unwrap();
+        let prefix = prefix_map
+            .try_get(&guild_id)
+            .try_unwrap()
+            .expect("Shoud get Ref para prefix");
         &*prefix.clone()
     };
 
@@ -60,12 +63,15 @@ pub async fn set_prefix(ctx: Context<'_>) -> Result<(), Error> {
                 // should validate it.
 
                 if (guild_repo
-                    .update_prefix(&guild_id.to_string(), &data.input.clone())
+                    .update_prefix(guild_id.get() as i64, &data.input.clone())
                     .await)
                     .is_ok()
                 {
                     {
-                        let mut teste = prefix_map.try_get_mut(&guild_id).unwrap();
+                        let mut teste = prefix_map
+                            .try_get_mut(&guild_id)
+                            .try_unwrap()
+                            .expect("ha, should return Refmap to alter");
                         *teste = data.input.clone();
                     }
                 }

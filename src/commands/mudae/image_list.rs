@@ -1,7 +1,10 @@
 use crate::{
     data::{Context, Error},
-    paginate::paginate,
+    db::repositories::{
+        character_repo::CharacterRepository, image_repo::ImageRepository, BaseRepository,
+    },
 };
+use ::serenity::builder::CreateEmbed;
 use poise::serenity_prelude::{self as serenity};
 
 // use serenity::{
@@ -17,7 +20,54 @@ use poise::serenity_prelude::{self as serenity};
 // };
 //
 #[poise::command(prefix_command, slash_command, aliases("cil"))]
-pub async fn list_custom_images(ctx: Context<'_>) -> Result<(), Error> {
+pub async fn list_custom_images(
+    ctx: Context<'_>,
+
+    user: Option<serenity::User>,
+    #[rest] character: Option<String>,
+) -> Result<(), Error> {
+    let author = user.as_ref().unwrap_or_else(|| ctx.author());
+
+    let pool = ctx.data().pool.clone();
+
+    let image_repo = ImageRepository::new(pool.clone());
+
+    if let Some(character_name) = character {
+        let character_repo = CharacterRepository::new(pool.clone());
+        let character_id = match character_repo.fetch_resource(&character_name).await? {
+            Some(row) => row.id,
+            None => {
+                ctx.say("CHARACTER_NOT_FOUND").await?;
+                return Ok(());
+            }
+        };
+
+        let character_images = match image_repo.fetch_collection_by_character(character_id).await {
+            Ok(links) => links
+                .iter()
+                .map(|character| character.image_url.clone())
+                .collect::<Vec<String>>(),
+            Err(err) => return Ok(()),
+        };
+        let mut embed = CreateEmbed::default().title("Images added for {character_name}");
+        for link in character_images.windows(15) {
+            println!("{link:?}");
+        }
+    };
+    let character_images = match image_repo.fetch_collection(author.id.get(), false).await {
+        Ok(links) => links
+            .iter()
+            .map(|character| character.image_url.clone())
+            .collect::<Vec<String>>(),
+        Err(err) => return Ok(()),
+    };
+    let mut embed = CreateEmbed::default().title("Images added for {character_name}");
+    for link in character_images {
+        println!("{link:?}");
+        println!("teste");
+    }
+
+    println!("final");
     Ok(())
 }
 // #[command]
@@ -107,4 +157,3 @@ pub async fn list_custom_images(ctx: Context<'_>) -> Result<(), Error> {
 //     Ok(())
 // }
 //
-

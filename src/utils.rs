@@ -59,7 +59,6 @@ pub async fn handle_rolls_message(msg: &Message, _ctx: &Context, data: &Data) {
     let character_repo = CharacterRepository::new(pool.clone());
 
     //* MudaeBot
-    println!("{msg:?}");
     if msg.author.id == 432610292342587392 {
         if let Some(embed) = msg.embeds.first() {
             if let Ok(roll) = parse_roll_embed(embed).await {
@@ -91,4 +90,3 @@ pub fn check_msg(result: serenity::Result<Message>) {
         log_response(Level::WARN, &format!("Error sending message: {:?}", why));
     }
 }
-

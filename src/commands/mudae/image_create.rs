@@ -20,7 +20,7 @@ use crate::{
     prefix_command,
     aliases("aci"),
     category = "mudae",
-    check = "check_valid_user",
+    // check = "check_valid_user",
     on_error = "argument_parse_error"
 )]
 pub async fn add_custom_image(
@@ -95,12 +95,12 @@ pub async fn add_custom_image(
 }
 
 async fn argument_parse_error(error: poise::FrameworkError<'_, Data, Error>) {
-    match error {
-        FrameworkError::ArgumentParse { ctx, .. } => {
-            let message = build_argument_error_message();
-            let _reply_handle = ctx.send(CreateReply::default().content(message)).await;
-        }
-        _ => todo!(),
+    if let FrameworkError::ArgumentParse {
+        error, input, ctx, ..
+    } = error
+    {
+        let message = build_argument_error_message();
+        let _reply_handle = ctx.send(CreateReply::default().content(message)).await;
     }
 }
 
@@ -127,9 +127,10 @@ async fn check_valid_user(ctx: Context<'_>) -> Result<bool, Error> {
         .fetch_resource(ctx.author().id.get() as i64)
         .await
     {
+        log_response(Level::ERROR, "user not found");
         return Ok(false);
     };
-    return Ok(true);
+    Ok(true)
 }
 #[cfg(test)]
 mod test {

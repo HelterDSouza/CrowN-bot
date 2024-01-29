@@ -35,7 +35,6 @@ pub static CONFIG: OnceCell<Config> = OnceCell::const_new();
 async fn init_config() -> Config {
     dotenv().ok();
 
-    println!("{:#?}", env::vars());
     let bot_config = BotConfig {
         token: env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set"),
         default_prefix: env::var("DISCORD_PREFIX").expect("DISCORD_PREXI must be set"),

@@ -16,11 +16,11 @@ impl GuildRepository {
     }
     pub async fn find_one_guild(
         &self,
-        guild_id: &str,
+        guild_id: i64,
     ) -> Result<Option<GuildConfiguration>, sqlx::Error> {
         let row = sqlx::query_as!(
             GuildConfiguration,
-            r#"select id as "id:_",roll_channel, guild_id,name, prefix, is_active from GuildConfigurations as gc where gc.guild_id = ?"#,
+            r#"select roll_channel, guild_id,name, prefix, is_active from GuildConfigurations as gc where gc.guild_id = ?"#,
             guild_id
         )
         .fetch_optional(&self.pool)
@@ -42,7 +42,6 @@ impl GuildRepository {
                 Values(?, ?, ?, ?)
                 ON CONFLICT DO NOTHING
                 RETURNING 
-                    id as "id!:u32", 
                     roll_channel,
                     name, 
                     guild_id, 
@@ -77,7 +76,7 @@ impl GuildRepository {
 
     pub async fn activate(
         &self,
-        guild_id: &str,
+        guild_id: i64,
     ) -> Result<sqlx::sqlite::SqliteQueryResult, sqlx::Error> {
         let row = sqlx::query!(
             "UPDATE GuildConfigurations SET is_active = true WHERE guild_id = $1",
@@ -96,35 +95,22 @@ impl GuildRepository {
             .await?;
 
         for guild in cursor {
-            prefixes.insert(
-                GuildId::from(guild.guild_id.trim().parse::<u64>()?),
-                guild.prefix,
-            );
+            prefixes.insert(GuildId::from(guild.guild_id as u64), guild.prefix);
         }
         Ok(prefixes)
     }
 
-    pub async fn update_prefix(
-        &self,
-        guild: &str,
-        prefix: &str,
-    ) -> Result<GuildConfiguration, sqlx::Error> {
-        let row = sqlx::query_as!(
+    pub async fn update_prefix(&self, guild: i64, prefix: &str) -> Result<(), sqlx::Error> {
+        let _ = sqlx::query_as!(
             GuildConfiguration,
-            r#"UPDATE GuildConfigurations SET prefix = $1 WHERE guild_id =$2 RETURNING
-                    id as "id!:u32", 
-                    roll_channel,
-                    name, 
-                    guild_id, 
-                    prefix, 
-                    is_active"#,
+            r#"UPDATE GuildConfigurations SET prefix = $1 WHERE guild_id = $2"#,
             prefix,
             guild
         )
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(row)
+        Ok(())
     }
 
     pub async fn fetch_rolls_channels(&self) -> CommandResult<DashMap<GuildId, ChannelId>> {
@@ -139,8 +125,8 @@ impl GuildRepository {
         for guild in cursor {
             if let Some(channel_id) = guild.roll_channel {
                 rolls_channels.insert(
-                    GuildId::from(guild.guild_id.parse::<u64>()?),
-                    ChannelId::from(channel_id.parse::<u64>()?),
+                    GuildId::from(guild.guild_id as u64),
+                    ChannelId::from(channel_id as u64),
                 );
             }
         }
@@ -162,4 +148,3 @@ impl GuildRepository {
         Ok(())
     }
 }
-

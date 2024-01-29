@@ -9,4 +9,5 @@ migrate:
 explode:
     sqlx database drop
 db_reset:
+    rm database.db
     sqlx database setup

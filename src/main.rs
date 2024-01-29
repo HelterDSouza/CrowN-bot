@@ -34,7 +34,6 @@ fn init_tracing() {
 async fn main() {
     let config = config().await;
 
-    println!("{config:#?}");
     init_tracing();
 
     let pool = initialize_database(config).await.unwrap();
@@ -50,7 +49,6 @@ async fn main() {
         prefix_map: prefixes,
         roll_channel_map: rolls_channels,
     };
-    println!("{:#?}", &data);
     let framework = framework::initialize_framework(data).await;
 
     let intents = initialize_intents().await;
