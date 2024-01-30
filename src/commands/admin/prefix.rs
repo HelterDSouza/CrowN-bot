@@ -23,10 +23,7 @@ pub async fn set_prefix(ctx: Context<'_>) -> Result<(), Error> {
     let prefix_map = &ctx.data().prefix_map;
 
     let prefix_str = {
-        let prefix = prefix_map
-            .try_get(&guild_id)
-            .try_unwrap()
-            .expect("Shoud get Ref para prefix");
+        let prefix = prefix_map.try_get(&guild_id).unwrap();
         &*prefix.clone()
     };
 
@@ -60,20 +57,13 @@ pub async fn set_prefix(ctx: Context<'_>) -> Result<(), Error> {
 
             if let Some(data) = data {
                 let prefix_str = format!("`{}`", data.input.clone());
-                // should validate it.
 
-                if (guild_repo
+                if guild_repo
                     .update_prefix(guild_id.get() as i64, &data.input.clone())
-                    .await)
+                    .await
                     .is_ok()
                 {
-                    {
-                        let mut teste = prefix_map
-                            .try_get_mut(&guild_id)
-                            .try_unwrap()
-                            .expect("ha, should return Refmap to alter");
-                        *teste = data.input.clone();
-                    }
+                    *prefix_map.try_get_mut(&guild_id).unwrap() = data.input.clone();
                 }
 
                 let embed = serenity::CreateEmbed::default()

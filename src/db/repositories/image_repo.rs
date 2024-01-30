@@ -21,10 +21,11 @@ impl ImageRepository {
         owner: i64,
     ) -> Result<(), sqlx::Error> {
         let query = sqlx::query!(
-            r#"INSERT INTO CustomImages (image_url,character_id,is_nsfw) VALUES($1,$2,$3)"#,
+            r#"INSERT INTO CustomImages (image_url,character_id,is_nsfw, added_by) VALUES($1,$2,$3,$4)"#,
             image,
             character_id,
             is_nsfw,
+            owner
         );
 
         query.execute(&self.pool).await?;
@@ -54,7 +55,7 @@ impl ImageRepository {
         Ok(row)
     }
     pub async fn remove_resource(&self, image_url: &str) -> Result<(), sqlx::Error> {
-        let row = sqlx::query!("DELETE FROM CustomImages where image_url = $1", image_url)
+        let _row = sqlx::query!("DELETE FROM CustomImages where image_url = $1", image_url)
             .execute(&self.pool)
             .await?;
         Ok(())

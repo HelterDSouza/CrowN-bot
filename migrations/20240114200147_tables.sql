@@ -1,9 +1,5 @@
 CREATE TABLE Accounts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  discord_id INT NOT NULL UNIQUE,
-  username VARCHAR(255) NOT NULL,
-  discriminator VARCHAR(255) NOT NULL,
-  global_name VARCHAR(255)
+  discord_id INTEGER PRIMARY KEY
 );
 
 CREATE TABLE IF NOT EXISTS GuildConfigurations (
@@ -22,7 +18,7 @@ CREATE TABLE CustomImages (
   is_nsfw BOOLEAN NOT NULL DEFAULT false,
   is_private BOOLEAN NOT NULL DEFAULT false,
   FOREIGN KEY (character_id) REFERENCES Characters (id),
-  FOREIGN KEY (added_by) REFERENCES Accounts (id)
+  FOREIGN KEY (added_by) REFERENCES Accounts (discord_id)
 );
 
 CREATE TABLE Series (

@@ -1,6 +1,6 @@
 use sqlx::{Pool, Sqlite};
 
-use crate::db::models::account::{Account, AccountResponse};
+use crate::db::models::account::Account;
 
 use super::BaseRepository;
 
@@ -18,20 +18,17 @@ impl AccountRepository {
     pub async fn create_resource(&self, account: Account) -> Result<(), sqlx::Error> {
         let _ = sqlx::query_as!(
             Account,
-            r#"INSERT INTO Accounts(discord_id,username,discriminator,global_name) values($1,$2,$3,$4)"#,
+            r#"INSERT INTO Accounts(discord_id) values($1)"#,
             account.discord_id,
-            account.username,
-            account.discriminator,
-            account.global_name
         )
-
-        .execute(&self.pool).await?;
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
-    pub async fn fetch_resource(&self, discord_id: i64) -> Result<AccountResponse, sqlx::Error> {
+    pub async fn fetch_resource(&self, discord_id: i64) -> Result<Account, sqlx::Error> {
         let row = sqlx::query_as!(
-            AccountResponse,
-            r#"SELECT discord_id,username,discriminator,global_name as "global_name!" FROM Accounts WHERE discord_id = $1"#,
+            Account,
+            r#"SELECT discord_id FROM Accounts WHERE discord_id = $1"#,
             discord_id,
         )
         .fetch_one(&self.pool)

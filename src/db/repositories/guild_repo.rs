@@ -107,7 +107,7 @@ impl GuildRepository {
             prefix,
             guild
         )
-        .fetch_one(&self.pool)
+        .execute(&self.pool)
         .await?;
 
         Ok(())

@@ -2,8 +2,8 @@ use crate::{
     commands::{
         admin::prefix::set_prefix,
         mudae::{
-            image_create::add_custom_image, image_list::list_custom_images,
-            roll_channel::set_roll_channel,
+            image_create::add_custom_image, image_delete::remove_custom_image,
+            image_list::list_custom_images, roll_channel::set_roll_channel,
         },
     },
     data::{Context, Data, Error},
@@ -50,6 +50,7 @@ fn initialize_framework_options() -> poise::FrameworkOptions<Data, Error> {
             set_prefix(),
             list_custom_images(),
             add_custom_image(),
+            remove_custom_image(),
         ],
 
         prefix_options: poise::PrefixFrameworkOptions {
