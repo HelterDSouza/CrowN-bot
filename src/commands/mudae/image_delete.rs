@@ -1,3 +1,4 @@
+use poise::serenity_prelude::all::ReactionType;
 use tracing::Level;
 
 use crate::{
@@ -25,7 +26,7 @@ pub async fn remove_custom_image(ctx: Context<'_>, #[rest] text: String) -> Resu
         )
     };
 
-    let (character_name, mut positions) = match parse_command_arguments(&text).await {
+    let (character_name, positions) = match parse_command_arguments(&text).await {
         Ok(result) => result,
         Err(error) => {
             ctx.say(error).await?;
@@ -33,62 +34,77 @@ pub async fn remove_custom_image(ctx: Context<'_>, #[rest] text: String) -> Resu
         }
     };
 
-    let character = match fetch_character(character_repo, character_name).await {
-        Ok(c) => c,
-        Err(err) => {
-            ctx.say(err).await?;
+    let character = match fetch_character_async(&character_repo, character_name).await {
+        Some(c) => c,
+        None => {
+            ctx.say(CHARACTER_NOT_FOUND).await?;
             return Ok(());
         }
     };
 
-    let images = match fetch_character_images(image_repo, &character.id).await {
-        Ok(c) => c.iter,
-        Err(err) => {
-            ctx.say(err).await?;
+    let images = match fetch_character_images_async(&image_repo, &character.id).await {
+        Some(c) => c,
+        None => {
+            ctx.say(DATABASE_QUERY_ERROR).await?;
             return Ok(());
         }
     };
 
-    for index in positions {
-        log_response(Level::DEBUG, &format!("{index}"));
-
-        let remove_image = images.find(|link| link.0 as u32 + 1 == index).unwrap().1;
-        // log_response(Level::DEBUG, &format!("{remove_image:?}"));
-        // match image_repo.remove_resource(&remove_image.image_url).await {
-        //     Ok(_) => tracing::debug!("Image remove successfully"),
-        //     Err(err) => {
-        //         tracing::error!("Error removing image: {err}");
-        //         return Ok(());
-        //     }
-        // }
+    if (images.len() as u32) < positions.iter().max().copied().unwrap_or_default() {
+        ctx.say("Position out of limit").await?;
+        return Ok(());
     }
+
+    for &index in &positions {
+        if let Some(image) = images.get(index.checked_sub(1).unwrap_or_default() as usize) {
+            log_response(Level::DEBUG, &format!("{image:?}"));
+            if let Err(err) = image_repo.remove_resource(&image.image_url).await {
+                tracing::error!("Error removing image: {}", err);
+                return Ok(());
+            }
+            tracing::debug!("Image removed successfully");
+        };
+    }
+
+    match ctx {
+        Context::Prefix(pctx) => {
+            pctx.msg
+                .react(pctx, ReactionType::Unicode("✅".to_string()))
+                .await?;
+        }
+        Context::Application(actx) => {
+            actx.reply("✅".to_string()).await?;
+        }
+    };
     Ok(())
 }
-
-async fn fetch_character_images(
-    repo: ImageRepository,
+async fn fetch_character_images_async(
+    repo: &ImageRepository,
     character_id: &u32,
-) -> Result<Vec<CustomImage>, &str> {
+) -> Option<Vec<CustomImage>> {
     match repo.fetch_collection_by_character(*character_id).await {
-        Ok(links) => Ok(links),
+        Ok(links) => Some(links),
         Err(why) => {
             log_response(
                 Level::ERROR,
-                &format!("Error: {DATABASE_QUERY_ERROR}\nWhy: {why}"),
+                &format!("Error: {}\nWhy: {}", DATABASE_QUERY_ERROR, why),
             );
-            Err(DATABASE_QUERY_ERROR)
+            None
         }
     }
 }
 
-async fn fetch_character(
-    repo: CharacterRepository,
+async fn fetch_character_async(
+    repo: &CharacterRepository,
     character_name: &str,
-) -> Result<Character, &str> {
+) -> Option<Character> {
     match repo.fetch_resource(character_name).await {
-        Ok(Some(character)) => Ok(character),
-        Ok(None) => Err(CHARACTER_NOT_FOUND),
-        Err(_) => Err(DATABASE_QUERY_ERROR),
+        Ok(Some(character)) => Some(character),
+        Ok(None) => None,
+        Err(_) => {
+            log_response(Level::ERROR, "Error fetching character");
+            None
+        }
     }
 }
 async fn parse_command_arguments(text: &str) -> Result<(&str, Vec<u32>), &str> {
@@ -109,59 +125,7 @@ async fn parse_command_arguments(text: &str) -> Result<(&str, Vec<u32>), &str> {
 
     Ok((character_name, positions))
 }
-// async fn remove_custom_image(ctx: &Context, msg: &Message, args: &mut Args) -> CommandResult {
-//     let data = ctx.data.read().await;
-//     let pool = data
-//         .get::<DatabasePool>()
-//         .cloned()
-//         .expect("expected a pool connection");
-//
-//     // repositories
-//     let character_repo = CharacterRepository::new(pool.clone());
-//     let image_repo = ImageRepository::new(pool.clone());
-//
-//     let character_name = match args.single::<String>() {
-//         Ok(name) => name,
-//         Err(_) => {
-//             check_msg(msg.reply(&ctx.http, CHARACTER_NAME_NOT_PROVIDED).await);
-//             return Ok(());
-//         }
-//     };
-// let character = match character_repo.fetch_resource(character_name.trim()).await { Ok(Some(character)) => character,
-//         Ok(None) => {
-//             check_msg(msg.reply(&ctx.http, CHARACTER_NOT_FOUND).await);
-//             return Ok(());
-//         }
-//         Err(_) => {
-//             check_msg(msg.reply(&ctx.http, DATABASE_QUERY_ERROR).await);
-//             return Ok(());
-//         }
-//     };
-//     let mut links = match image_repo.fetch_collection_by_character(character.id).await {
-//         Ok(links) => links.into_iter().enumerate(),
-//         Err(_) => {
-//             loggin_response(Level::ERROR, DATABASE_QUERY_ERROR);
-//             return Ok(());
-//         }
-//     };
-//     loggin_response(Level::DEBUG, &format!("{links:?}"));
-//     while let Ok(index) = args.single::<u32>() {
-//         loggin_response(Level::DEBUG, &format!("{args:?}"));
-//         loggin_response(Level::DEBUG, &format!("{index}"));
-//
-//         let remove_image = links.find(|link| link.0 as u32 + 1 == index).unwrap().1;
-//         loggin_response(Level::DEBUG, &format!("{remove_image:?}"));
-//         match image_repo.remove_resource(&remove_image.image_url).await {
-//             Ok(_) => tracing::debug!("Image remove successfully"),
-//             Err(err) => {
-//                 tracing::error!("Error removing image: {err}");
-//                 return Ok(());
-//             }
-//         }
-//     }
-//
-//     Ok(())
-// }
+
 #[cfg(test)]
 mod test {
     use crate::{
